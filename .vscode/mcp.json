@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "ykps-utils": {
+      "type": "stdio",
+      "command": "npm",
+      "args": ["run", "--silent", "mcp"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}

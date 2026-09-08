@@ -1,0 +1,34 @@
+{
+  "channels": [
+    {
+      "id": "operations-slack",
+      "type": "slack",
+      "url": "https://hooks.slack.com/services/replace/me"
+    },
+    {
+      "id": "operations-email",
+      "type": "email",
+      "recipients": ["operations@example.com"]
+    },
+    {
+      "id": "audit-webhook",
+      "type": "webhook",
+      "url": "https://example.com/notification-hook",
+      "headers": {
+        "x-hook-token": "replace-me"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "eventTypes": ["deployment.failed", "service.unhealthy"],
+      "channelIds": ["operations-slack", "operations-email"]
+    },
+    {
+      "eventTypes": ["*"],
+      "channelIds": ["audit-webhook"]
+    }
+  ],
+  "defaultTimeoutMs": 5000,
+  "retryDelayMs": 250
+}

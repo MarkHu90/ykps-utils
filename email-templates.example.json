@@ -1,0 +1,18 @@
+[
+  {
+    "id": "welcome",
+    "defaultLocale": "en",
+    "locales": {
+      "en": {
+        "subject": "Welcome, {{name}}",
+        "html": "<h1>Welcome, {{name}}</h1><p>Your account is ready.</p>",
+        "text": "Welcome, {{name}}\n\nYour account is ready."
+      },
+      "zh": {
+        "subject": "欢迎，{{name}}",
+        "html": "<h1>欢迎，{{name}}</h1><p>你的账户已经准备好了。</p>",
+        "text": "欢迎，{{name}}\n\n你的账户已经准备好了。"
+      }
+    }
+  }
+]
