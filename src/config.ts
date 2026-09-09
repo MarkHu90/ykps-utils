@@ -217,7 +217,7 @@ export function loadHttpConfig(
     ? parseList(environment.ALLOWED_HOSTS)
     : [...DEFAULT_ALLOWED_HOSTS];
   const allowedOrigins = environment.ALLOWED_ORIGINS
-    ? parseList(environment.ALLOWED_ORIGINS)
+    ? parseList(environment.ALLOWED_ORIGINS).map(normalizeOrigin)
     : undefined;
 
   if (apiKeys.some((apiKey) => apiKey.length < 16)) {
@@ -254,6 +254,17 @@ function parseList(value: string): string[] {
   }
 
   return values;
+}
+
+// ALLOWED_ORIGINS 的约定是纯主机名（与 Origin 校验逻辑一致）；这里容错地把
+// 带 `https://` 协议或 `:端口` 的写法归一化成主机名，解析失败时原样保留。
+function normalizeOrigin(entry: string): string {
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(entry) ? entry : `http://${entry}`;
+  try {
+    return new URL(withScheme).hostname;
+  } catch {
+    return entry;
+  }
 }
 
 function parsePort(value: string | undefined): number {

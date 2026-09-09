@@ -62,6 +62,19 @@ describe("configuration", () => {
     });
   });
 
+  it("normalizes ALLOWED_ORIGINS entries to bare hostnames", () => {
+    const environment = {
+      SERVICE_API_KEYS: "first-client-key-value",
+      ALLOWED_ORIGINS: "https://ps.ykpaoschool.cn, localhost:3000, ykpaoschool.cn",
+    };
+
+    expect(loadHttpConfig(environment).allowedOrigins).toEqual([
+      "ps.ykpaoschool.cn",
+      "localhost",
+      "ykpaoschool.cn",
+    ]);
+  });
+
   it("leaves SMTP email disabled when credentials are omitted", () => {
     expect(loadAliyunSmtpOptions({})).toBeUndefined();
   });

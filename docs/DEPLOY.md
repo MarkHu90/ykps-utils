@@ -135,7 +135,7 @@ chmod 600 .env
 | `SERVICE_API_KEYS` | 是 | `openssl rand -hex 32` 生成；多个 Key 用逗号分隔，便于无停机轮换 |
 | `HOST` / `PORT` | 否 | 容器内由 compose 固定为 `0.0.0.0:3030`，保持默认即可 |
 | `ALLOWED_HOSTS` | 是 | **必须包含域名**：`apis.ykpaoschool.cn,localhost,127.0.0.1` |
-| `ALLOWED_ORIGINS` | 否 | 有浏览器页面调用时设置，取值为调用页面的主机名（不含 `https://` 和端口）；纯服务端调用可留空 |
+| `ALLOWED_ORIGINS` | 否 | 有浏览器页面调用时设置为调用页面的主机名（带 `https://` 或端口也会归一化成主机名）；纯服务端调用可留空 |
 
 完整环境变量说明见 [USAGE.md 第 2 节](USAGE.md#2-部署配置)。
 

@@ -83,7 +83,7 @@ cp .env.example .env
 | `HOST` | 否 | 默认 `127.0.0.1` |
 | `PORT` | 否 | 默认 `3030` |
 | `ALLOWED_HOSTS` | 否 | 允许的 Host 列表，逗号分隔 |
-| `ALLOWED_ORIGINS` | 否 | 允许的浏览器 Origin 列表，逗号分隔 |
+| `ALLOWED_ORIGINS` | 否 | 允许的浏览器 Origin 主机名列表，逗号分隔；带 `https://` 或端口的值会自动归一化成主机名 |
 
 启动 HTTP 与远程 MCP 服务：
 

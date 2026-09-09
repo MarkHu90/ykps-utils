@@ -1,4 +1,5 @@
 import { createMcpFastifyApp } from "@modelcontextprotocol/fastify";
+import cors from "@fastify/cors";
 import type { OpenAPIV3 } from "openapi-types";
 import type { FastifyInstance } from "fastify";
 import swagger from "@fastify/swagger";
@@ -48,6 +49,29 @@ export function createHttpApp(options: HttpAppOptions): FastifyInstance {
       ? {}
       : { allowedOrigins: [...options.allowedOrigins] }),
   });
+  // createMcpFastifyApp 的 allowedOrigins 只做请求侧校验（不匹配直接 403），
+  // 不会发送 Access-Control-Allow-Origin；浏览器跨域调用还需要真正的 CORS
+  // 响应头，这里用 @fastify/cors 补齐预检与响应头。
+  if (options.allowedOrigins !== undefined) {
+    const allowedOriginHostnames = [...options.allowedOrigins];
+    app.register(cors, {
+      origin: (origin, callback) => {
+        if (origin === undefined) {
+          return callback(null, false);
+        }
+        let hostname: string;
+        try {
+          hostname = new URL(origin).hostname;
+        } catch {
+          return callback(null, false);
+        }
+        callback(
+          null,
+          allowedOriginHostnames.includes(hostname) ? origin : false,
+        );
+      },
+    });
+  }
   const authenticate = createBearerAuthenticator(options.apiKeys);
   const emailService = options.emailService ?? new EmailService();
 
