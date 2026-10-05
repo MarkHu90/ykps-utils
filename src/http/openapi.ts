@@ -6,6 +6,12 @@ export const openApiDocument = {
     description:
       "YKPS utility APIs for translation, email, and event-routed notifications, exposed through REST and MCP.",
   },
+  tags: [
+    {
+      name: "PowerSchool",
+      description: "PowerSchool SIS integrations.",
+    },
+  ],
   servers: [{ url: "/" }],
   paths: {
     "/": {
@@ -165,6 +171,43 @@ export const openApiDocument = {
           "401": { description: "Missing or invalid bearer token." },
           "422": { description: "No route matches the event type." },
           "503": { description: "Notifications are not configured." },
+        },
+      },
+    },
+    "/v1/powerschool/access-token": {
+      get: {
+        tags: ["PowerSchool"],
+        operationId: "getPowerSchoolAccessTokenUsage",
+        summary: "Get PowerSchool access-token endpoint usage information",
+        responses: { "200": { description: "POST request usage information." } },
+      },
+      post: {
+        tags: ["PowerSchool"],
+        operationId: "getPowerSchoolAccessToken",
+        summary: "Get a PowerSchool OAuth access token",
+        description:
+          "Exchanges PowerSchool plugin client credentials using the OAuth client credentials grant.",
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/PowerSchoolAccessTokenRequest" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "PowerSchool access token acquired.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/PowerSchoolAccessTokenResponse" },
+              },
+            },
+          },
+          "400": { description: "Invalid request." },
+          "401": { description: "Missing or invalid service bearer token." },
+          "502": { description: "PowerSchool rejected the request or returned an invalid response." },
         },
       },
     },
@@ -413,6 +456,30 @@ export const openApiDocument = {
           },
         },
         required: ["requestId", "eventType", "priority", "duplicate", "channels"],
+      },
+      PowerSchoolAccessTokenRequest: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          baseUrl: {
+            type: "string",
+            format: "uri",
+            examples: ["https://school.example.com"],
+          },
+          clientId: { type: "string" },
+          clientSecret: { type: "string", format: "password", writeOnly: true },
+        },
+        required: ["baseUrl", "clientId", "clientSecret"],
+      },
+      PowerSchoolAccessTokenResponse: {
+        type: "object",
+        properties: {
+          requestId: { type: "string" },
+          accessToken: { type: "string" },
+          tokenType: { type: "string", examples: ["Bearer"] },
+          expiresIn: { type: "number", examples: [2592000] },
+        },
+        required: ["requestId", "accessToken", "tokenType", "expiresIn"],
       },
     },
   },

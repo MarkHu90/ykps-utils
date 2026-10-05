@@ -25,6 +25,14 @@ import {
   TranslationError,
   type TranslationService,
 } from "../translation/service.js";
+import {
+  getPowerSchoolAccessTokenRequestSchema,
+  toGetPowerSchoolAccessTokenCommand,
+} from "../powerschool/contracts.js";
+import {
+  PowerSchoolError,
+  PowerSchoolService,
+} from "../powerschool/service.js";
 import { registerMcpHttpRoutes } from "../mcp/http.js";
 import { createBearerAuthenticator } from "./auth.js";
 import { openApiDocument } from "./openapi.js";
@@ -33,6 +41,7 @@ export interface HttpAppOptions {
   translationService: TranslationService;
   emailService?: EmailService;
   notificationService?: NotificationService;
+  powerSchoolService?: PowerSchoolService;
   apiKeys: readonly string[];
   host?: string;
   allowedHosts?: readonly string[];
@@ -74,6 +83,7 @@ export function createHttpApp(options: HttpAppOptions): FastifyInstance {
   }
   const authenticate = createBearerAuthenticator(options.apiKeys);
   const emailService = options.emailService ?? new EmailService();
+  const powerSchoolService = options.powerSchoolService ?? new PowerSchoolService();
 
   // Swagger UI：以静态模式复用现有 OpenAPI 文档，UI 挂在 /docs，
   // 插件在 /docs/json 暴露同一份规范（/openapi.json 保持不变）。
@@ -96,6 +106,7 @@ export function createHttpApp(options: HttpAppOptions): FastifyInstance {
       sendEmail: "/v1/email/send",
       previewEmail: "/v1/email/preview",
       sendNotification: "/v1/notifications/send",
+      powerSchoolAccessToken: "/v1/powerschool/access-token",
       mcp: "/mcp",
       openapi: "/openapi.json",
       health: "/health",
@@ -159,6 +170,19 @@ export function createHttpApp(options: HttpAppOptions): FastifyInstance {
       message: "Production deployment failed.",
       priority: "critical",
       idempotencyKey: "deployment-42",
+    },
+    documentation: "/openapi.json",
+  }));
+  app.get("/v1/powerschool/access-token", async () => ({
+    name: "PowerSchool OAuth API",
+    operation: "getPowerSchoolAccessToken",
+    method: "POST",
+    authentication: "Authorization: Bearer <SERVICE_API_KEY>",
+    contentType: "application/json",
+    requestBody: {
+      baseUrl: "https://school.example.com",
+      clientId: "<POWERSCHOOL_CLIENT_ID>",
+      clientSecret: "<POWERSCHOOL_CLIENT_SECRET>",
     },
     documentation: "/openapi.json",
   }));
@@ -258,6 +282,32 @@ export function createHttpApp(options: HttpAppOptions): FastifyInstance {
     },
   );
 
+  app.post(
+    "/v1/powerschool/access-token",
+    { preHandler: authenticate },
+    async (request, reply) => {
+      const parsedRequest = getPowerSchoolAccessTokenRequestSchema.safeParse(
+        request.body,
+      );
+      if (!parsedRequest.success) {
+        return reply.code(400).send({
+          error: {
+            code: "INVALID_REQUEST",
+            message: parsedRequest.error.issues
+              .map((issue) => `${issue.path.join(".") || "body"}: ${issue.message}`)
+              .join("; "),
+            requestId: request.id,
+          },
+        });
+      }
+
+      const result = await powerSchoolService.getAccessToken(
+        toGetPowerSchoolAccessTokenCommand(parsedRequest.data),
+      );
+      return reply.code(200).send({ requestId: request.id, ...result });
+    },
+  );
+
   registerMcpHttpRoutes(
     app,
     options.translationService,
@@ -271,6 +321,7 @@ export function createHttpApp(options: HttpAppOptions): FastifyInstance {
       error instanceof TranslationError
       || error instanceof EmailError
       || error instanceof NotificationError
+      || error instanceof PowerSchoolError
     ) {
       const statusCode =
         error.code === "INVALID_REQUEST"

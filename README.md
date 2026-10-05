@@ -1,6 +1,6 @@
 # YKPS Utils
 
-一组可供其他平台调用的 YKPS 实用服务，目前提供翻译、邮件，以及支持 Webhook、Slack、Teams、钉钉和企业微信的统一通知能力。REST API 与 MCP 共用相同的业务服务。
+一组可供其他平台调用的 YKPS 实用服务，目前提供翻译、邮件、PowerSchool OAuth，以及支持 Webhook、Slack、Teams、钉钉和企业微信的统一通知能力。REST API 与 MCP 共用相同的业务服务。
 
 完整的部署流程（Ubuntu + Docker + Nginx）见 [部署指南](docs/DEPLOY.md)；REST、邮件模板、附件和 MCP 调用手册见 [YKPS Utils 使用说明](docs/USAGE.md)。
 
@@ -10,6 +10,7 @@
 - `POST /v1/email/send`：通过阿里云 Direct Mail SMTP 发送邮件
 - `POST /v1/email/preview`：渲染邮件模板但不发送
 - `POST /v1/notifications/send`：根据事件类型路由统一通知
+- `POST /v1/powerschool/access-token`：使用 PowerSchool 插件客户端凭据获取 access token
 - `POST /mcp`：MCP Streamable HTTP（MCP 2026-07-28）
 - stdio MCP：供 VS Code、GitHub Copilot 等本地客户端启动
 - `GET /`：YKPS Utils 服务信息和入口
@@ -17,7 +18,7 @@
 - `GET /openapi.json`：OpenAPI 3.1 文档
 - `GET /health`：进程健康检查
 
-HTTP 翻译、邮件与 MCP HTTP 都要求 `Authorization: Bearer <API_KEY>`。健康检查、Swagger UI 和 OpenAPI 文档不需要认证。
+HTTP 业务接口与 MCP HTTP 都要求 `Authorization: Bearer <API_KEY>`。健康检查、Swagger UI 和 OpenAPI 文档不需要认证。PowerSchool 接口在 Swagger UI 的 `PowerSchool` 分组中。
 
 ## 快速开始
 

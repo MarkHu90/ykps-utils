@@ -9,6 +9,7 @@ import {
   NotificationService,
   type NotificationProvider,
 } from "../../src/notification/service.js";
+import { PowerSchoolService } from "../../src/powerschool/service.js";
 import {
   TranslationService,
   type ProviderTranslateRequest,
@@ -73,6 +74,12 @@ describe("translation REST API", () => {
         [notificationProvider],
         [{ eventTypes: ["deployment.failed"], channelIds: ["operations"] }],
       ),
+      powerSchoolService: new PowerSchoolService(async () =>
+        new Response(JSON.stringify({
+          access_token: "powerschool-token",
+          token_type: "Bearer",
+          expires_in: "2592000",
+        }), { status: 200, headers: { "content-type": "application/json" } })),
       apiKeys: ["client-key"],
     });
   });
@@ -94,6 +101,7 @@ describe("translation REST API", () => {
         sendEmail: "/v1/email/send",
         previewEmail: "/v1/email/preview",
         sendNotification: "/v1/notifications/send",
+        powerSchoolAccessToken: "/v1/powerschool/access-token",
         mcp: "/mcp",
         openapi: "/openapi.json",
         health: "/health",
@@ -130,8 +138,37 @@ describe("translation REST API", () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
       openapi: "3.1.0",
-      paths: { "/v1/translate": { post: { security: [{ bearerAuth: [] }] } } },
+      paths: {
+        "/v1/translate": { post: { security: [{ bearerAuth: [] }] } },
+        "/v1/powerschool/access-token": {
+          post: {
+            tags: ["PowerSchool"],
+            security: [{ bearerAuth: [] }],
+          },
+        },
+      },
     });
+  });
+
+  it("gets a PowerSchool access token", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/powerschool/access-token",
+      headers: { authorization: "Bearer client-key" },
+      payload: {
+        baseUrl: "https://school.example.com",
+        clientId: "client-id",
+        clientSecret: "client-secret",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      accessToken: "powerschool-token",
+      tokenType: "Bearer",
+      expiresIn: 2592000,
+    });
+    expect(response.json().requestId).toEqual(expect.any(String));
   });
 
   it("serves the swagger ui at /docs", async () => {

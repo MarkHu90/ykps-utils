@@ -1,6 +1,6 @@
 # YKPS Utils 使用说明
 
-本文面向服务部署者和 API 调用方，说明如何配置、启动和调用 YKPS Utils。服务目前提供翻译、邮件、统一事件通知以及 MCP 接口。
+本文面向服务部署者和 API 调用方，说明如何配置、启动和调用 YKPS Utils。服务目前提供翻译、邮件、统一事件通知、PowerSchool OAuth 以及 MCP 接口。
 
 ## 1. 服务地址与认证
 
@@ -371,7 +371,41 @@ curl "$YKPS_UTILS_URL/v1/notifications/send" \
 
 相同 `idempotencyKey` 和相同请求会复用进行中或已完成的结果，并返回 `duplicate: true`；同一键对应不同内容会返回 `400`。当前幂等记录保存在服务进程内，重启后清空，横向扩容部署应将该仓库替换为 Redis 或数据库实现。
 
-## 6. 错误处理
+## 6. PowerSchool OAuth API
+
+使用 PowerSchool 插件的客户端凭据获取 access token：
+
+```text
+POST /v1/powerschool/access-token
+```
+
+该接口在 Swagger UI 中位于 `PowerSchool` 分组。`baseUrl` 可以是 PowerSchool 站点根地址或站内页面地址，服务只使用其 origin 请求 `/oauth/access_token/`。
+
+```bash
+curl "$YKPS_UTILS_URL/v1/powerschool/access-token" \
+  -H "Authorization: Bearer $YKPS_UTILS_API_KEY" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "baseUrl": "https://school.example.com",
+    "clientId": "<POWERSCHOOL_CLIENT_ID>",
+    "clientSecret": "<POWERSCHOOL_CLIENT_SECRET>"
+  }'
+```
+
+成功响应：
+
+```json
+{
+  "requestId": "req-1",
+  "accessToken": "<POWERSCHOOL_ACCESS_TOKEN>",
+  "tokenType": "Bearer",
+  "expiresIn": 2592000
+}
+```
+
+服务按照 PowerSchool OAuth 的 client credentials 流程发送 Basic Auth 和 `grant_type=client_credentials`。PowerSchool 返回字符串型 `expires_in` 时，接口会将其规范化为数字 `expiresIn`。`clientSecret`、Basic Authorization 头和上游响应正文不会写入日志或错误响应。
+
+## 7. 错误处理
 
 错误响应格式：
 
@@ -390,13 +424,13 @@ curl "$YKPS_UTILS_URL/v1/notifications/send" \
 | `400` | `INVALID_REQUEST` | 参数、模板、变量、语言或附件无效 |
 | `401` | `UNAUTHORIZED` | Bearer Token 缺失或无效 |
 | `422` | `NO_ROUTE` | 没有匹配事件类型的通知路由 |
-| `502` | `PROVIDER_ERROR` | Azure Translator 或 SMTP 上游调用失败 |
+| `502` | `PROVIDER_ERROR` | Azure Translator、SMTP 或 PowerSchool 上游调用失败 |
 | `503` | `PROVIDER_NOT_CONFIGURED` | SMTP 未配置时尝试发送邮件 |
 | `500` | `INTERNAL_ERROR` | 未预期的服务端错误 |
 
 调用方应记录 `requestId`，但不要记录 API Key、SMTP 密码或待翻译及邮件正文中的敏感数据。
 
-## 7. MCP 使用
+## 8. MCP 使用
 
 服务提供四个 MCP 工具：
 
@@ -431,7 +465,7 @@ npm run mcp
 
 stdio 模式的协议输出使用 stdout，诊断输出使用 stderr。项目中的 `.vscode/mcp.json` 可供 VS Code 直接启动本地服务。
 
-## 8. JavaScript 调用示例
+## 9. JavaScript 调用示例
 
 ```javascript
 const response = await fetch(`${process.env.YKPS_UTILS_URL}/v1/translate`, {
@@ -455,7 +489,7 @@ if (!response.ok) {
 console.log(payload.translations[0].text);
 ```
 
-## 8. 运维检查
+## 10. 运维检查
 
 ```bash
 # 健康检查
